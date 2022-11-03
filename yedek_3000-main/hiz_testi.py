@@ -1,3 +1,4 @@
+from doctest import FAIL_FAST
 from dronekit import Command, connect, VehicleMode, LocationGlobalRelative
 import time
 from pymavlink import mavutil
@@ -33,33 +34,90 @@ def arm_ol_ve_yuksel(hedef_yukseklik):
     print("Takeoff gerceklesti")
 
 
-def gorev_1():
-    global komut
-    komut = iha.commands
-    komut.clear()
-    time.sleep(1)
-
-    komut.add(Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-                      mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, 0, 0, 10))
-
-    komut.add(Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-                      mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, 0, 0, 0, 20, 0, 0, 0, 0, 0))
-
-    # waypoint
-    komut.add(Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-                      mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, -35.35699099, 149.16382687, 20))
-    # RTL
-    komut.add(Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-                      mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0, 0, 0, 0, 0, 0, 0))
-
-    komut.upload()
-    print("comands uploading..")
+def condition_yaw(heading, relative=False):
+    if relative:
+        is_relative = 1  # yaw relative to direction of travel
+    else:
+        is_relative = 0  # yaw is an absolute angle
+    # create the CONDITION_YAW command using command_long_encode()
+    msg = iha.message_factory.command_long_encode(
+        0, 0,  # target system, target component
+        mavutil.mavlink.MAV_CMD_CONDITION_YAW,  # command
+        0,  # confirmation
+        heading,  # param 1, yaw in degrees
+        0,  # param 2, yaw speed deg/s
+        1,  # param 3, direction -1 ccw, 1 cw
+        is_relative,  # param 4, relative offset 1, absolute angle 0
+        0, 0, 0)  # param 5 ~ 7 not used
+    # send command to vehicle
+    iha.send_mavlink(msg)
 
 
+def goto_position_target_relative_ned(north, east, down=0):
+    msg = iha.message_factory.set_position_target_local_ned_encode(
+        0,  # time_boot_ms (not used)
+        0, 0,  # target system, target component
+        mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED,  # frame
+        0b0000111111111000,  # type_mask (only positions enabled)
+        north, east, down,
+        0, 0, 0,  # x, y, z velocity in m/s  (not used)
+        0, 0, 0,  # x, y, z acceleration (not supported yet, ignored in GCS_Mavlink)
+        0, 0)  # yaw, yaw_rate (not supported yet, ignored in GCS_Mavlink)
+    # send command to iha
+    iha.send_mavlink(msg)
 
-arm_ol_ve_yuksel(10)
-gorev_1()
 
-iha.mode = VehicleMode("AUTO")
-time.sleep(1)
+condition_yaw(0, relative=True)
 
+
+def ileri():
+    goto_position_target_relative_ned(10, 0)
+    condition_yaw(0, relative=True)
+
+
+def geri():
+    goto_position_target_relative_ned(-10, 0)
+    condition_yaw(0, relative=True)
+
+
+def sag():
+    goto_position_target_relative_ned(0, 10)
+    condition_yaw(0, relative=True)
+
+
+def sol():
+    goto_position_target_relative_ned(0, -10)
+    condition_yaw(0, relative=True)
+
+
+arm_ol_ve_yuksel(15)
+
+a_location = LocationGlobalRelative(-35.35699099, 149.16382687, 10)
+
+iha.simple_goto(a_location, airspeed=5.0)
+
+time.sleep(15)
+iha.airspeed = 2
+time.sleep(5)
+curentgps = iha.location.global_frame
+
+iha.airspeed = 2
+iha.simple_goto(curentgps, airspeed=0.5)
+
+time.sleep(5)
+sag()
+time.sleep(4)
+iha.airspeed = 10
+sag()
+time.sleep(4)
+iha.airspeed = 1
+sag()
+time.sleep(4)
+
+ileri()
+time.sleep(4)
+
+geri()
+time.sleep(4)
+
+iha.mode = VehicleMode("RTL")
