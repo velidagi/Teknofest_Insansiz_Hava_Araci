@@ -14,6 +14,7 @@ toplamy = 0
 toplampx = 1
 font = cv2.FONT_HERSHEY_SIMPLEX
 
+
 def ort(dizix, diziy, px_mt_list, toplamx=toplamx, toplamy=toplamy, toplampx=toplampx):
 
     for i in range(0, len(dizix)-1):
