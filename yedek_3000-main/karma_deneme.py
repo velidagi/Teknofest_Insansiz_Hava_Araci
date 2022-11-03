@@ -6,6 +6,7 @@ import cv2
 import time
 connection_string="127.0.0.1:14550"
 
+
 iha=connect(connection_string,wait_ready=True,timeout=100)
 global toplamx
 global toplamy
