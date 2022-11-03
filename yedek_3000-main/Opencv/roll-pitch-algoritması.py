@@ -6,6 +6,7 @@ frameCounter = 0
 sayi = 0
 while 1:
 
+
     ret, frame = cap.read()
     frame = cv2.flip(frame, 1)
     frame = cv2.resize(frame, (640, 480))
