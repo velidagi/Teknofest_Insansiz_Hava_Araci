@@ -56,6 +56,7 @@ def gorev_1():
     print("comands uploading..")
 
 
+
 arm_ol_ve_yuksel(10)
 gorev_1()
 
