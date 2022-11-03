@@ -22,6 +22,7 @@ def arm_ol_ve_yuksel(hedef_yukseklik):
 	print("Guided moduna gecis yapildi")
 	iha.armed=True
 	while iha.armed is False:
+
 		print("Arm icin bekleniliyor")
 		time.sleep(1)
 
